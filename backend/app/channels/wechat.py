@@ -842,7 +842,7 @@ class WechatChannel(Channel):
                 metadata={
                     "context_token": context_token,
                     "ilink_user_id": chat_id,
-                    "message_id": str(raw_message.get("message_id") or raw_message.get("msg_id") or "").strip(),
+                    "message_id": str(raw_message.get("message_id") or raw_message.get("msg_id") or raw_message.get("client_id") or "").strip(),
                     "ref_msg": self._extract_ref_message(raw_message),
                     "raw_message": raw_message,
                 },

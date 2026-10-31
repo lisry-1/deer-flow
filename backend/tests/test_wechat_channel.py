@@ -226,6 +226,38 @@ def test_handle_update_publishes_private_chat_message():
     _run(go())
 
 
+def test_handle_update_falls_back_to_client_id_for_dedupe():
+    from app.channels.wechat import WechatChannel
+
+    async def go():
+        bus = MessageBus()
+        published = []
+
+        async def capture(msg):
+            published.append(msg)
+
+        bus.publish_inbound = capture  # type: ignore[method-assign]
+
+        channel = WechatChannel(bus=bus, config={"bot_token": "test-token"})
+        # A message that only carries client_id (no message_id / msg_id) must
+        # still get a usable dedupe key; otherwise redelivery is not deduped.
+        await channel._handle_update(
+            {
+                "message_type": 1,
+                "from_user_id": "wx-user-1",
+                "context_token": "ctx-1",
+                "client_id": "cli-1",
+                "item_list": [{"type": 1, "text_item": {"text": "hello"}}],
+            }
+        )
+
+        assert len(published) == 1
+        inbound = published[0]
+        assert inbound.metadata["message_id"] == "cli-1"
+
+    _run(go())
+
+
 def test_handle_update_downloads_inbound_image(monkeypatch, tmp_path: Path):
     from app.channels.wechat import WechatChannel
 
